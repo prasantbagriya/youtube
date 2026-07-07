@@ -370,6 +370,22 @@ export default function App() {
                   </div>
                 </div>
 
+                <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-[#e5e5e5]">
+                  <label className="text-sm font-medium text-[#0f0f0f]">📱 Android App (APK)</label>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-[#606060]">Download VidStream Android App for background audio support.</p>
+                    <a
+                      href="https://github.com/prasantbagriya/youtube/releases/latest/download/VidStream.apk"
+                      download="VidStream.apk"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#0f0f0f] text-white hover:bg-[#272727] transition-colors whitespace-nowrap"
+                    >
+                      ⬇️ Download APK
+                    </a>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-[#e5e5e5]">
                   <button 
                     onClick={() => setActiveTab("Home")}
