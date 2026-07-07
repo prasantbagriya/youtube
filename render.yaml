@@ -2,7 +2,7 @@ services:
   - type: web
     name: vidstream
     runtime: node
-    buildCommand: npm install && npm run build
+    buildCommand: curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o yt-dlp && chmod a+rx yt-dlp && npm install && npm run build
     startCommand: node dist/server.cjs
     envVars:
       - key: NODE_ENV

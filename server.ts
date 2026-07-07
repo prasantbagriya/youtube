@@ -36,8 +36,11 @@ async function startServer() {
       
       res.setHeader('Content-Type', 'audio/mp4');
       res.setHeader('Accept-Ranges', 'none');
+      res.setHeader('Transfer-Encoding', 'chunked');
+
+      const ytdlpCommand = process.env.NODE_ENV === 'production' ? './yt-dlp' : 'yt-dlp';
       
-      const subprocess = spawn('yt-dlp', [
+      const subprocess = spawn(ytdlpCommand, [
         '-f', '140',
         '-o', '-',
         ytUrl

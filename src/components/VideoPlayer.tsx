@@ -173,13 +173,27 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
         
         // Protect the HTML5 Audio with a Foreground Service to prevent screen-off pausing
         if (isAudioMode) {
-          import('@capawesome-team/capacitor-android-foreground-service').then(({ ForegroundService }) => {
-             ForegroundService.startForegroundService({
-                id: 12345,
-                title: 'VidStream Audio',
-                body: `Playing: ${video.snippet?.title || 'Audio'}`,
-                smallIcon: 'ic_launcher'
-             }).catch(console.warn);
+          import('@capawesome-team/capacitor-android-foreground-service').then(async ({ ForegroundService }) => {
+             try {
+                // Request permissions first to avoid SecurityException on Android 13+
+                let perm = await ForegroundService.checkPermissions();
+                if (perm.display !== 'granted') {
+                   perm = await ForegroundService.requestPermissions();
+                }
+                
+                if (perm.display === 'granted') {
+                   ForegroundService.startForegroundService({
+                      id: 12345,
+                      title: 'VidStream Audio',
+                      body: `Playing: ${video.snippet?.title || 'Audio'}`,
+                      smallIcon: 'ic_launcher'
+                   }).catch(console.warn);
+                } else {
+                   console.warn('Notification permission denied, background service may not work');
+                }
+             } catch (e) {
+                console.error('Failed to start Foreground Service', e);
+             }
           });
         } else {
           import('@capawesome-team/capacitor-android-foreground-service').then(({ ForegroundService }) => {
