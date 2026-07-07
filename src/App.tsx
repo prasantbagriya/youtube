@@ -375,7 +375,7 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-[#606060]">Download VidStream Android App for background audio support.</p>
                     <a
-                      href="https://github.com/prasantbagriya/youtube/releases/latest/download/VidStream.apk"
+                      href="https://github.com/prasantbagriya/youtube/raw/main/releases/VidStream.apk"
                       download="VidStream.apk"
                       target="_blank"
                       rel="noopener noreferrer"
