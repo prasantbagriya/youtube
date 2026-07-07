@@ -17,7 +17,7 @@ export default function App() {
   const [pageToken, setPageToken] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 640);
   const [activeTab, setActiveTab] = useState("Home");
   const [homePreferences, setHomePreferences] = useState(() => {
     const saved = localStorage.getItem("yt_home_prefs");
@@ -341,6 +341,7 @@ useEffect(() => {
             isOpen={isSidebarOpen} 
             activeTab={activeTab}
             onTabSelect={handleTabSelect}
+            onClose={() => setIsSidebarOpen(false)}
           />
           <main 
             className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] pb-16 sm:pb-0 transition-all ${isSidebarOpen ? 'sm:ml-[240px]' : 'sm:ml-[72px]'}`}
@@ -446,7 +447,9 @@ useEffect(() => {
                     <AlertCircle className="w-10 h-10 text-red-500" />
                   </div>
                   <div className="max-w-md">
-                    <h2 className="text-2xl font-bold text-[#0f0f0f] mb-2">Authentication Required</h2>
+                    <h2 className="text-2xl font-bold text-[#0f0f0f] mb-2">
+                    {error.includes("Authentication") ? "Authentication Required" : "Oops! Something went wrong"}
+                  </h2>
                     <p className="text-[#606060] text-sm leading-relaxed mb-6">{error}</p>
                   </div>
                 </div>

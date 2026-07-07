@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidstream-v1';
+const CACHE_NAME = 'vidstream-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
