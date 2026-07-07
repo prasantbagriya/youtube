@@ -18,5 +18,9 @@
       "backgroundColor": "#ffffff",
       "style": "DARK"
     }
+  },
+  "server": {
+    "url": "https://youtube-j5r4.onrender.com",
+    "cleartext": true
   }
 }
