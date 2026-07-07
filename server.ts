@@ -31,33 +31,30 @@ async function startServer() {
   app.get("/api/youtube/audio/:videoId", async (req, res) => {
     try {
       const videoId = req.params.videoId;
-      const youtubedl = (await import('youtube-dl-exec')).default;
+      const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const { spawn } = await import('child_process');
       
       res.setHeader('Content-Type', 'audio/mp4');
+      res.setHeader('Accept-Ranges', 'none');
       
-      // Spawn yt-dlp to download and pipe directly to response
-      const subprocess = youtubedl.exec(`https://www.youtube.com/watch?v=${videoId}`, {
-        f: 'bestaudio',
-        o: '-',
-        noWarnings: true,
-        callHome: false,
-        noCheckCertificates: true,
-        youtubeSkipDashManifest: true,
-        referer: 'https://www.youtube.com/'
-      }) as any;
-      
-      if (subprocess.stdout) {
-        subprocess.stdout.pipe(res);
-      }
-      
-      subprocess.catch((error: any) => {
+      const subprocess = spawn('yt-dlp', [
+        '-f', '140',
+        '-o', '-',
+        ytUrl
+      ]);
+
+      subprocess.stdout.pipe(res);
+
+      subprocess.on('error', (err) => {
+        console.error('Failed to start subprocess.', err);
         if (!res.headersSent) {
-           res.status(500).send("Stream error");
+          res.status(500).json({ error: 'Failed to stream audio' });
         }
       });
-    } catch (error) {
-      console.error("Audio stream error:", error);
-      if (!res.headersSent) res.status(500).send("Stream error");
+    } catch (err) {
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to fetch audio stream' });
+      }
     }
   });
 

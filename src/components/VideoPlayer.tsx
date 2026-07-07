@@ -170,30 +170,53 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           artwork: [{ src: thumb, sizes: '512x512', type: 'image/jpeg' }]
         });
         MediaSession.setPlaybackState({ playbackState: 'playing' });
-        
-        MediaSession.setActionHandler({ action: 'play' }, () => {
-          const audioEl = document.querySelector('audio');
-          if (audioEl) {
-             audioEl.play().catch(console.warn);
-          } else {
+        // Native Audio Playback Integration
+        if (isAudioMode) {
+          import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
+            NativeAudio.preload({
+                assetId: 'youtube-audio',
+                assetPath: `https://youtube-j5r4.onrender.com/api/youtube/audio/${videoId}`,
+                audioChannelNum: 1,
+                isUrl: true
+            }).then(() => {
+                NativeAudio.play({ assetId: 'youtube-audio' });
+            }).catch(console.warn);
+            
+            MediaSession.setActionHandler({ action: 'play' }, () => {
+               NativeAudio.play({ assetId: 'youtube-audio' });
+               MediaSession.setPlaybackState({ playbackState: 'playing' });
+            });
+            MediaSession.setActionHandler({ action: 'pause' }, () => {
+               NativeAudio.pause({ assetId: 'youtube-audio' });
+               MediaSession.setPlaybackState({ playbackState: 'paused' });
+            });
+          });
+        } else {
+          import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
+            NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
+            NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
+          });
+          
+          MediaSession.setActionHandler({ action: 'play' }, () => {
              iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
-          }
-          MediaSession.setPlaybackState({ playbackState: 'playing' });
-        });
-        MediaSession.setActionHandler({ action: 'pause' }, () => {
-          const audioEl = document.querySelector('audio');
-          if (audioEl) {
-             audioEl.pause();
-          } else {
+             MediaSession.setPlaybackState({ playbackState: 'playing' });
+          });
+          MediaSession.setActionHandler({ action: 'pause' }, () => {
              iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
-          }
-          MediaSession.setPlaybackState({ playbackState: 'paused' });
-        });
+             MediaSession.setPlaybackState({ playbackState: 'paused' });
+          });
+        }
       } catch (e) {
         console.warn('Native MediaSession not available', e);
       }
     }
-  }, [video, videoId, videos]);
+    return () => {
+       import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
+          NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
+          NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
+       });
+    };
+  }, [video, videoId, videos, isAudioMode]);
 
   // Autoplay Next Video logic
   useEffect(() => {
@@ -258,16 +281,6 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                   <Headphones size={24} /> Audio Mode Active
                 </div>
                 <p className="text-white/70 text-sm mb-4">Audio is streaming from server...</p>
-                <audio 
-                  autoPlay 
-                  controls 
-                  className="w-full max-w-sm mt-4" 
-                  src={`https://youtube-j5r4.onrender.com/api/youtube/audio/${videoId}`}
-                  onPlay={() => {
-                    // Send pause to iframe so they don't overlap
-                    iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
-                  }}
-                />
               </div>
             </div>
           )}
