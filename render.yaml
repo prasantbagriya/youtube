@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: vidstream
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: YOUTUBE_API_KEY
+        sync: false  # You will set this manually in Render dashboard

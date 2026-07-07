@@ -16,7 +16,7 @@ function parseDurationToSeconds(duration: string): number {
 
 dotenv.config();
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
 async function startServer() {
