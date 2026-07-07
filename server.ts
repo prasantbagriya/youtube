@@ -36,12 +36,12 @@ async function startServer() {
       const info = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
         dumpJson: true,
         noWarnings: true,
-        noCallHome: true,
+        callHome: false,
         noCheckCertificate: true,
         preferFreeFormats: true,
         youtubeSkipDashManifest: true,
         referer: 'https://www.youtube.com/'
-      });
+      }) as any;
 
       // Find best audio-only format
       const formats = info.formats || [];
