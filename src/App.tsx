@@ -8,8 +8,20 @@ import { VideoPlayer } from "./components/VideoPlayer";
 import { getTrendingVideos, searchVideos } from "./lib/youtube";
 import { YouTubeVideo, YouTubeSearchResponse } from "./types";
 import { App as CapacitorApp } from '@capacitor/app';
+import { BackgroundMode } from '@anuradev/capacitor-background-mode';
 
 export default function App() {
+  useEffect(() => {
+    const initBackgroundMode = async () => {
+      try {
+        await BackgroundMode.enable();
+        await BackgroundMode.disableWebViewOptimizations();
+      } catch (err) {
+        console.log('BackgroundMode init error:', err);
+      }
+    };
+    initBackgroundMode();
+  }, []);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
