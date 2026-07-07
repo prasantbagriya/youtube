@@ -18,6 +18,52 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [isLoadingRelated, setIsLoadingRelated] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // ── SILENT AUDIO BYPASS HACK ─────────────────────────────────────────
+  // Plays a 1-second silent loop using Web Audio API.
+  // This tricks the browser into keeping the audio session ACTIVE,
+  // so the YouTube iframe continues playing even when app is minimized.
+  const startSilentAudio = () => {
+    try {
+      if (audioCtxRef.current) return; // already running
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+
+      // Create silent buffer: 1 second, 1 channel, 44100 Hz
+      const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      // Buffer filled with zeros = total silence
+
+      const playLoop = () => {
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.onended = playLoop; // loop forever
+        source.start();
+      };
+      playLoop();
+      console.log('[VidStream] Silent audio session started — background play enabled!');
+    } catch (e) {
+      console.warn('[VidStream] Silent audio bypass failed:', e);
+    }
+  };
+
+  // Start silent audio as soon as component mounts (first user interaction unlocks AudioContext)
+  useEffect(() => {
+    const unlock = () => {
+      startSilentAudio();
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('click', unlock, { once: true });
+    return () => {
+      // Cleanup on unmount
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+    };
+  }, []);
 
   const videoId = video ? (typeof video.id === 'string' ? video.id : video.id.videoId || '') : '';
 
