@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { YouTubeVideo } from "../types";
 import { getVideoId, searchVideos, getVideoComments } from "../lib/youtube";
 import { ThumbsUp, ThumbsDown, Share, Clock, MoreHorizontal, Headphones, Video } from "lucide-react";
@@ -17,6 +17,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
   const [comments, setComments] = useState<any[]>([]);
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [isLoadingRelated, setIsLoadingRelated] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const videoId = video ? (typeof video.id === 'string' ? video.id : video.id.videoId || '') : '';
 
@@ -54,6 +55,32 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
     setIsDescExpanded(false);
     fetchRelated();
     fetchComments();
+
+    // ── MEDIA SESSION API ──────────────────────────────────────────────
+    // Sets up Lock Screen / Notification bar controls for background audio
+    if ('mediaSession' in navigator && video) {
+      const thumb = video.snippet.thumbnails.high?.url || video.snippet.thumbnails.medium?.url || '';
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: video.snippet.title,
+        artist: video.snippet.channelTitle,
+        album: 'VidStream',
+        artwork: [
+          { src: thumb, sizes: '512x512', type: 'image/jpeg' },
+        ],
+      });
+
+      // Playback actions (prev/next video)
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        const idx = (relatedVideos.length > 0 ? relatedVideos : videos).findIndex(v => getVideoId(v) === videoId);
+        if (idx > 0) onVideoSelect((relatedVideos.length > 0 ? relatedVideos : videos)[idx - 1]);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        const list = relatedVideos.length > 0 ? relatedVideos : videos;
+        const idx = list.findIndex(v => getVideoId(v) === videoId);
+        if (idx < list.length - 1) onVideoSelect(list[idx + 1]);
+        else if (list.length > 0) onVideoSelect(list[0]);
+      });
+    }
   }, [video, videoId, videos]);
 
   if (!video) return null;
@@ -91,10 +118,11 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           )}
           <iframe
             id="player"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+            ref={iframeRef}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
             className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
             allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
           />
         </div>
 
