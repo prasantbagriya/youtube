@@ -14,6 +14,25 @@ body {
   @apply bg-white text-[#0f0f0f] h-full;
   margin: 0;
   overflow-y: hidden; /* We'll control scroll in components */
+  /* Capacitor safe area variables */
+  --sait: env(safe-area-inset-top, 0px);
+  --saib: env(safe-area-inset-bottom, 0px);
+  --sail: env(safe-area-inset-left, 0px);
+  --sair: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+  padding-top: var(--sait);
+}
+
+.pb-safe {
+  padding-bottom: var(--saib);
+}
+
+/* Base safe padding for App layout */
+.app-container {
+  padding-left: var(--sail);
+  padding-right: var(--sair);
 }
 
 #root {

@@ -7,6 +7,7 @@ import { VideoGrid } from "./components/VideoGrid";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { getTrendingVideos, searchVideos } from "./lib/youtube";
 import { YouTubeVideo, YouTubeSearchResponse } from "./types";
+import { App as CapacitorApp } from '@capacitor/app';
 
 export default function App() {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
@@ -66,6 +67,25 @@ export default function App() {
     localStorage.removeItem("yt_token_expiry");
     return null;
   });
+
+  // Capacitor Android Back Button Handler
+  useEffect(() => {
+    const handleBackButton = () => {
+      if (selectedVideo) {
+        // If a video is playing, close it and go back to home feed
+        setSelectedVideo(null);
+      } else {
+        // Otherwise, exit the app
+        CapacitorApp.exitApp();
+      }
+    };
+    
+    CapacitorApp.addListener('backButton', handleBackButton);
+    
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
+  }, [selectedVideo]);
 
   const loadTrending = async (isLoadMore = false) => {
     if (isLoadMore) {
@@ -301,32 +321,30 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     loadTrending();
   }, [accessToken]);
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-x-hidden w-full">
-      <Header 
-        onSearch={handleSearch} 
-        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        onHomeClick={loadTrending}
-        accessToken={accessToken}
-        setAccessToken={setAccessToken}
-      />
-
-      <div className="flex flex-1 mt-14 h-[calc(100vh-56px)] overflow-hidden">
-        {/* Sidebar is now always visible on every page */}
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          activeTab={activeTab}
-          onTabSelect={handleTabSelect}
+    <div className="flex flex-col h-full bg-[#0f0f0f] w-full max-w-[2000px] mx-auto app-container">
+      <div className="flex flex-col h-full bg-white relative pt-safe pb-safe overflow-x-hidden w-full">
+        <Header 
+          onSearch={handleSearch} 
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onHomeClick={loadTrending}
           accessToken={accessToken}
+          setAccessToken={setAccessToken}
         />
 
-        <main 
-          className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] pb-16 sm:pb-0 transition-all ${isSidebarOpen ? 'sm:ml-[240px]' : 'sm:ml-[72px]'}`}
-        >
+        <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
+          <Sidebar 
+            isOpen={isSidebarOpen} 
+            activeTab={activeTab}
+            onTabSelect={handleTabSelect}
+          />
+          <main 
+            className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] pb-16 sm:pb-0 transition-all ${isSidebarOpen ? 'sm:ml-[240px]' : 'sm:ml-[72px]'}`}
+          >
           {selectedVideo ? (
             <VideoPlayer 
               video={selectedVideo} 
@@ -450,6 +468,7 @@ export default function App() {
             </div>
           )}
         </main>
+        </div>
         
         {/* Bottom Navigation for Mobile */}
         <div className="sm:hidden fixed bottom-0 w-full bg-white border-t border-[#e5e5e5] flex justify-around items-center py-1.5 z-40 px-2 pb-safe">

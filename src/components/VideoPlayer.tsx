@@ -214,7 +214,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           <iframe
             id="player"
             ref={iframeRef}
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
             className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
