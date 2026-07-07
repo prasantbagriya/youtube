@@ -24,6 +24,7 @@
     "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "@ybd-project/ytdl-core": "^6.0.8",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
@@ -32,6 +33,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3",
+    "youtube-dl-exec": "^3.1.9",
     "yt-search": "^2.13.1"
   },
   "devDependencies": {

@@ -31,16 +31,29 @@ async function startServer() {
   app.get("/api/youtube/audio/:videoId", async (req, res) => {
     try {
       const videoId = req.params.videoId;
-      const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
-      const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+      const youtubedl = (await import('youtube-dl-exec')).default;
       
-      if (!format) {
+      const info = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
+        dumpJson: true,
+        noWarnings: true,
+        noCallHome: true,
+        noCheckCertificate: true,
+        preferFreeFormats: true,
+        youtubeSkipDashManifest: true,
+        referer: 'https://www.youtube.com/'
+      });
+
+      // Find best audio-only format
+      const formats = info.formats || [];
+      const audioFormats = formats.filter((f: any) => f.acodec !== 'none' && f.vcodec === 'none');
+      const format = audioFormats.length > 0 ? audioFormats[0] : formats[0];
+      
+      if (!format || !format.url) {
         return res.status(404).send("Audio format not found");
       }
       
-      // Crucial: Set correct mime type so Android <audio> tag doesn't fail to decode
-      res.setHeader('Content-Type', format.mimeType?.split(';')[0] || 'audio/mp4');
-      ytdl.downloadFromInfo(info, { format }).pipe(res);
+      // Redirect the client's <audio> tag directly to Google's streaming server
+      res.redirect(302, format.url);
     } catch (error) {
       console.error("Audio stream error:", error);
       res.status(500).send("Stream error");
