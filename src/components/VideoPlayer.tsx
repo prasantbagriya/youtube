@@ -164,15 +164,48 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
     // Sets up Lock Screen / Notification bar controls for background audio
     if (video) {
       const thumb = video.snippet.thumbnails.high?.url || video.snippet.thumbnails.medium?.url || '';
-        const idx = (relatedVideos.length > 0 ? relatedVideos : videos).findIndex(v => getVideoId(v) === videoId);
-        if (idx > 0) onVideoSelect((relatedVideos.length > 0 ? relatedVideos : videos)[idx - 1]);
-      });
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        const list = relatedVideos.length > 0 ? relatedVideos : videos;
-        const idx = list.findIndex(v => getVideoId(v) === videoId);
-        if (idx < list.length - 1) onVideoSelect(list[idx + 1]);
-        else if (list.length > 0) onVideoSelect(list[0]);
-      });
+      
+      // Web API (for browsers)
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: video.snippet.title,
+          artist: video.snippet.channelTitle,
+          album: 'VidStream',
+          artwork: [{ src: thumb, sizes: '512x512', type: 'image/jpeg' }]
+        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          const idx = (relatedVideos.length > 0 ? relatedVideos : videos).findIndex(v => getVideoId(v) === videoId);
+          if (idx > 0) onVideoSelect((relatedVideos.length > 0 ? relatedVideos : videos)[idx - 1]);
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          const list = relatedVideos.length > 0 ? relatedVideos : videos;
+          const idx = list.findIndex(v => getVideoId(v) === videoId);
+          if (idx < list.length - 1) onVideoSelect(list[idx + 1]);
+          else if (list.length > 0) onVideoSelect(list[0]);
+        });
+      }
+
+      // Native Plugin (for Android Foreground Service)
+      try {
+        MediaSession.setMetadata({
+          title: video.snippet.title,
+          artist: video.snippet.channelTitle,
+          album: 'VidStream',
+          artwork: [{ src: thumb, sizes: '512x512', type: 'image/jpeg' }]
+        });
+        MediaSession.setPlaybackState({ playbackState: 'playing' });
+        
+        MediaSession.setActionHandler({ action: 'play' }, () => {
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+          MediaSession.setPlaybackState({ playbackState: 'playing' });
+        });
+        MediaSession.setActionHandler({ action: 'pause' }, () => {
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+          MediaSession.setPlaybackState({ playbackState: 'paused' });
+        });
+      } catch (e) {
+        console.warn('Native MediaSession not available', e);
+      }
     }
   }, [video, videoId, videos]);
 
