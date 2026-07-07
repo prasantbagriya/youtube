@@ -14,7 +14,7 @@ export default function App() {
   useEffect(() => {
     const initBackgroundMode = async () => {
       try {
-        await BackgroundMode.enable();
+        await BackgroundMode.enable({});
         await BackgroundMode.disableWebViewOptimizations();
       } catch (err) {
         console.log('BackgroundMode init error:', err);
