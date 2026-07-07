@@ -172,11 +172,21 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
         MediaSession.setPlaybackState({ playbackState: 'playing' });
         
         MediaSession.setActionHandler({ action: 'play' }, () => {
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+          const audioEl = document.querySelector('audio');
+          if (audioEl) {
+             audioEl.play();
+          } else {
+             iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+          }
           MediaSession.setPlaybackState({ playbackState: 'playing' });
         });
         MediaSession.setActionHandler({ action: 'pause' }, () => {
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+          const audioEl = document.querySelector('audio');
+          if (audioEl) {
+             audioEl.pause();
+          } else {
+             iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+          }
           MediaSession.setPlaybackState({ playbackState: 'paused' });
         });
       } catch (e) {
