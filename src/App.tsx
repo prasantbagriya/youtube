@@ -344,7 +344,7 @@ useEffect(() => {
             onClose={() => setIsSidebarOpen(false)}
           />
           <main 
-            className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] pb-16 sm:pb-0 transition-all ${isSidebarOpen ? 'sm:ml-[240px]' : 'sm:ml-[72px]'}`}
+            className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#f9f9f9] pb-16 sm:pb-0 transition-all pt-[calc(env(safe-area-inset-top,0px)+56px)] ${isSidebarOpen ? 'sm:ml-[240px]' : 'sm:ml-[72px]'}`}
           >
           {selectedVideo ? (
             <VideoPlayer 

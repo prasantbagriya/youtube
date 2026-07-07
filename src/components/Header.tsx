@@ -63,7 +63,7 @@ export function Header({ onSearch, onMenuClick, onHomeClick, accessToken, setAcc
   });
 
   return (
-    <header className="h-14 bg-white flex items-center justify-between px-4 shrink-0 w-full fixed top-0 z-50">
+    <header className="min-h-[56px] py-2 bg-white flex items-center justify-between px-4 shrink-0 w-full fixed top-0 z-50 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] pb-[0.5rem]">
       
       {/* Mobile Search Overlay */}
       {isMobileSearch ? (
@@ -120,7 +120,7 @@ export function Header({ onSearch, onMenuClick, onHomeClick, accessToken, setAcc
           <div className="flex items-center gap-4">
             <button 
               onClick={onMenuClick}
-              className="p-2 hover:bg-black/5 rounded-full transition-colors hidden sm:block"
+              className="p-2 hover:bg-black/5 rounded-full transition-colors block"
             >
               <Menu size={24} className="text-[#0f0f0f]" strokeWidth={1.5} />
             </button>
