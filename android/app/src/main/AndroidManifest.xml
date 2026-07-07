@@ -20,6 +20,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <receiver android:name="io.capawesome.capacitorjs.plugins.foregroundservice.NotificationActionBroadcastReceiver" />
+        <service 
+            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService" 
+            android:foregroundServiceType="mediaPlayback" 
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

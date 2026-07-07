@@ -18,6 +18,7 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/status-bar": "^8.0.2",
+    "@capawesome-team/capacitor-android-foreground-service": "^8.1.0",
     "@capgo/capacitor-media-session": "^8.0.28",
     "@capgo/capacitor-native-audio": "^8.4.15",
     "@distube/ytdl-core": "^4.16.12",

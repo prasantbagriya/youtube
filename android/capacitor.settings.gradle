@@ -14,6 +14,9 @@ project(':capacitor-keyboard').projectDir = new File('../node_modules/@capacitor
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacitor/status-bar/android')
 
+include ':capawesome-team-capacitor-android-foreground-service'
+project(':capawesome-team-capacitor-android-foreground-service').projectDir = new File('../node_modules/@capawesome-team/capacitor-android-foreground-service/android')
+
 include ':capgo-capacitor-media-session'
 project(':capgo-capacitor-media-session').projectDir = new File('../node_modules/@capgo/capacitor-media-session/android')
 

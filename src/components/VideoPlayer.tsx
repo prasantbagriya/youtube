@@ -172,6 +172,15 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
         MediaSession.setPlaybackState({ playbackState: 'playing' });
         // Native Audio Playback Integration
         if (isAudioMode) {
+          import('@capawesome-team/capacitor-android-foreground-service').then(({ ForegroundService }) => {
+             ForegroundService.startForegroundService({
+                id: 12345,
+                title: 'VidStream Audio',
+                body: `Playing: ${video.snippet?.title || 'Audio'}`,
+                smallIcon: 'ic_launcher' // fallback default capacitor icon
+             }).catch(console.warn);
+          });
+          
           import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
             NativeAudio.preload({
                 assetId: 'youtube-audio',
@@ -192,6 +201,10 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
             });
           });
         } else {
+          import('@capawesome-team/capacitor-android-foreground-service').then(({ ForegroundService }) => {
+             ForegroundService.stopForegroundService().catch(() => {});
+          });
+          
           import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
             NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
             NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
@@ -211,6 +224,9 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
       }
     }
     return () => {
+       import('@capawesome-team/capacitor-android-foreground-service').then(({ ForegroundService }) => {
+          ForegroundService.stopForegroundService().catch(() => {});
+       });
        import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
           NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
           NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
