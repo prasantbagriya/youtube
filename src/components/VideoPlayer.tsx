@@ -18,52 +18,101 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [isLoadingRelated, setIsLoadingRelated] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const wakeLockRef = useRef<any>(null);
 
-  // ── SILENT AUDIO BYPASS HACK ─────────────────────────────────────────
-  // Plays a 1-second silent loop using Web Audio API.
-  // This tricks the browser into keeping the audio session ACTIVE,
-  // so the YouTube iframe continues playing even when app is minimized.
-  const startSilentAudio = () => {
+  // ── BACKGROUND PLAY BYPASS SYSTEM ────────────────────────────────────
+  // Strategy:
+  // 1. Use Web Audio API oscillator at gain=0 (true silence, keeps audio session alive)
+  // 2. Listen to visibilitychange — resume AudioContext if browser suspended it
+  // 3. Send YouTube iframe a "play" postMessage when user comes back
+  // 4. Request WakeLock to keep the screen/CPU active
+
+  const startBackgroundAudio = () => {
     try {
-      if (audioCtxRef.current) return; // already running
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') return;
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
-      // Create silent buffer: 1 second, 1 channel, 44100 Hz
-      const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      // Buffer filled with zeros = total silence
-
-      const playLoop = () => {
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.onended = playLoop; // loop forever
-        source.start();
-      };
-      playLoop();
-      console.log('[VidStream] Silent audio session started — background play enabled!');
+      // Oscillator at 0 Hz, connected to gain=0 → true silence but keeps audio session alive
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      gainNodeRef.current = gainNode;
+      gainNode.gain.value = 0; // completely silent
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      oscillator.start();
+      console.log('[VidStream] Background audio session started!');
     } catch (e) {
-      console.warn('[VidStream] Silent audio bypass failed:', e);
+      console.warn('[VidStream] Background audio failed:', e);
     }
   };
 
-  // Start silent audio as soon as component mounts (first user interaction unlocks AudioContext)
+  const resumeAudioContext = () => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().then(() => {
+        console.log('[VidStream] AudioContext resumed after page became active');
+      });
+    }
+  };
+
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator && !wakeLockRef.current) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log('[VidStream] WakeLock acquired!');
+        wakeLockRef.current.addEventListener('release', () => {
+          wakeLockRef.current = null;
+        });
+      }
+    } catch (e) {
+      console.warn('[VidStream] WakeLock not available:', e);
+    }
+  };
+
+  const sendPlayToIframe = () => {
+    // Send play command to YouTube iframe via postMessage
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: 'playVideo' }),
+      '*'
+    );
+  };
+
+  // Handle visibility change: resume everything when user comes back to app
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible again → resume audio context and re-request wakeLock
+        resumeAudioContext();
+        requestWakeLock();
+        // Small delay then send play command to iframe
+        setTimeout(sendPlayToIframe, 300);
+      } else {
+        // Page going hidden → make sure AudioContext is running before it gets suspended
+        resumeAudioContext();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Unlock AudioContext and WakeLock on first user interaction
   useEffect(() => {
     const unlock = () => {
-      startSilentAudio();
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('click', unlock);
+      startBackgroundAudio();
+      requestWakeLock();
     };
     window.addEventListener('touchstart', unlock, { once: true });
     window.addEventListener('click', unlock, { once: true });
     return () => {
-      // Cleanup on unmount
       audioCtxRef.current?.close();
       audioCtxRef.current = null;
+      wakeLockRef.current?.release();
     };
   }, []);
+
 
   const videoId = video ? (typeof video.id === 'string' ? video.id : video.id.videoId || '') : '';
 
@@ -165,7 +214,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           <iframe
             id="player"
             ref={iframeRef}
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
             className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
