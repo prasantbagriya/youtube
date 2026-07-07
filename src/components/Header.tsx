@@ -63,7 +63,7 @@ export function Header({ onSearch, onMenuClick, onHomeClick, accessToken, setAcc
   });
 
   return (
-    <header className="min-h-[56px] py-2 bg-white flex items-center justify-between px-4 shrink-0 w-full fixed top-0 z-50 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] pb-[0.5rem]">
+    <header className="h-[calc(env(safe-area-inset-top,0px)+56px)] bg-white flex items-center justify-between px-4 shrink-0 w-full fixed top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
       
       {/* Mobile Search Overlay */}
       {isMobileSearch ? (
