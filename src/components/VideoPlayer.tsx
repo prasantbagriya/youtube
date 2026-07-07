@@ -178,6 +178,39 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
     }
   }, [video, videoId, videos]);
 
+  // Autoplay Next Video logic
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        // YouTube API state: 0 = ended
+        if (data.event === "onStateChange" && data.info === 0) {
+          if (relatedVideos && relatedVideos.length > 0) {
+            onVideoSelect(relatedVideos[0]);
+          }
+        }
+      } catch (err) {}
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    // Send a listening event to the iframe to ensure it broadcasts state changes
+    const hookIframe = setInterval(() => {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({
+          event: "listening",
+          id: iframeRef.current.id,
+          channel: "widget"
+        }), "*");
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      clearInterval(hookIframe);
+    };
+  }, [relatedVideos, onVideoSelect]);
+
   if (!video) return null;
 
   const { title, channelTitle, description, publishedAt } = video.snippet;
@@ -212,6 +245,11 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                   src={`/api/youtube/audio/${videoId}`}
                   controls
                   autoPlay
+                  onEnded={() => {
+                    if (relatedVideos && relatedVideos.length > 0) {
+                      onVideoSelect(relatedVideos[0]);
+                    }
+                  }}
                   className="w-full max-w-md custom-audio-player"
                 />
               </div>
