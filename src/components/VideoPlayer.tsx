@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { YouTubeVideo } from "../types";
 import { getVideoId, searchVideos, getVideoComments } from "../lib/youtube";
-import { ThumbsUp, ThumbsDown, Share, Clock, MoreHorizontal, Headphones, Video } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Share, Clock, MoreHorizontal, Headphones, Video, Download } from "lucide-react";
 
 interface VideoPlayerProps {
   video: YouTubeVideo | null;
@@ -256,7 +256,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
             id="player"
             ref={iframeRef}
             src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
-            className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
+            className={`w-full h-full border-none ${isAudioMode ? 'opacity-0 absolute w-[1px] h-[1px] pointer-events-none' : 'visible relative'}`}
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
           />
@@ -291,6 +291,14 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full transition-colors font-medium text-sm text-[#0f0f0f]">
               <Share size={18} strokeWidth={1.5} /> Share
+            </button>
+            <button 
+              onClick={() => {
+                window.open(`https://yt1s.com/en/youtube-to-mp4?q=https://www.youtube.com/watch?v=${videoId}`, '_system');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full transition-colors font-medium text-sm text-[#0f0f0f]"
+            >
+              <Download size={18} strokeWidth={1.5} /> Download
             </button>
             <button 
               onClick={() => onAddToWatchLater(video)}
