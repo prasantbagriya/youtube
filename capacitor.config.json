@@ -2,9 +2,6 @@
   "appId": "com.vidstream.app",
   "appName": "VidStream",
   "webDir": "dist",
-  "server": {
-    "androidScheme": "https"
-  },
   "android": {
     "allowMixedContent": true,
     "backgroundColor": "#0f0f0f"
@@ -20,6 +17,7 @@
     }
   },
   "server": {
+    "androidScheme": "https",
     "url": "https://youtube-j5r4.onrender.com",
     "cleartext": true
   }
