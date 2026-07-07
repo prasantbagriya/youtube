@@ -80,32 +80,8 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
     );
   };
 
-  // Handle visibility change: resume everything when user comes back to app
-  useEffect(() => {
-    let playInterval: NodeJS.Timeout;
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page became visible again → resume audio context and re-request wakeLock
-        resumeAudioContext();
-        requestWakeLock();
-        if (playInterval) clearInterval(playInterval);
-        // Small delay then send play command to iframe
-        setTimeout(sendPlayToIframe, 300);
-      } else {
-        // Page going hidden → make sure AudioContext is running before it gets suspended
-        resumeAudioContext();
-        // Force YouTube iframe to stay playing by spamming play command
-        playInterval = setInterval(sendPlayToIframe, 1000);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (playInterval) clearInterval(playInterval);
-    };
-  }, []);
+  // We intentionally do not use visibilitychange to force the iframe to play,
+  // because that interrupts the native audio tag playback in MP3 mode when the screen turns off.
 
   // Unlock AudioContext and WakeLock on first user interaction
   useEffect(() => {
