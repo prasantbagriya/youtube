@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { YouTubeVideo } from "../types";
 import { getVideoId, searchVideos, getVideoComments } from "../lib/youtube";
 import { ThumbsUp, ThumbsDown, Share, Clock, MoreHorizontal, Headphones, Video, Download } from "lucide-react";
+import { MediaSession } from "@capgo/capacitor-media-session";
 
 interface VideoPlayerProps {
   video: YouTubeVideo | null;
@@ -161,19 +162,8 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
 
     // ── MEDIA SESSION API ──────────────────────────────────────────────
     // Sets up Lock Screen / Notification bar controls for background audio
-    if ('mediaSession' in navigator && video) {
+    if (video) {
       const thumb = video.snippet.thumbnails.high?.url || video.snippet.thumbnails.medium?.url || '';
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: video.snippet.title,
-        artist: video.snippet.channelTitle,
-        album: 'VidStream',
-        artwork: [
-          { src: thumb, sizes: '512x512', type: 'image/jpeg' },
-        ],
-      });
-
-      // Playback actions (prev/next video)
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
         const idx = (relatedVideos.length > 0 ? relatedVideos : videos).findIndex(v => getVideoId(v) === videoId);
         if (idx > 0) onVideoSelect((relatedVideos.length > 0 ? relatedVideos : videos)[idx - 1]);
       });
@@ -294,7 +284,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
             </button>
             <button 
               onClick={() => {
-                window.open(`https://yt1s.com/en/youtube-to-mp4?q=https://www.youtube.com/watch?v=${videoId}`, '_system');
+                window.open(`https://www.y2mate.com/youtube/${videoId}`, '_system');
               }}
               className="flex items-center gap-2 px-4 py-2 bg-[#f2f2f2] hover:bg-[#e5e5e5] rounded-full transition-colors font-medium text-sm text-[#0f0f0f]"
             >
