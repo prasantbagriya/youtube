@@ -271,7 +271,17 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                 <div className="text-white font-bold text-xl flex items-center gap-2">
                   <Headphones size={24} /> Audio Mode Active
                 </div>
-                <p className="text-white/70 text-sm mb-4">Video is playing in the background</p>
+                <p className="text-white/70 text-sm mb-4">Audio is streaming from server...</p>
+                <audio 
+                  autoPlay 
+                  controls 
+                  className="w-full max-w-sm mt-4" 
+                  src={`https://youtube-j5r4.onrender.com/api/youtube/audio/${videoId}`}
+                  onPlay={() => {
+                    // Send pause to iframe so they don't overlap
+                    iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+                  }}
+                />
               </div>
             </div>
           )}

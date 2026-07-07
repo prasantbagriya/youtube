@@ -31,9 +31,16 @@ async function startServer() {
   app.get("/api/youtube/audio/:videoId", async (req, res) => {
     try {
       const videoId = req.params.videoId;
-      res.setHeader('Content-Type', 'audio/mpeg');
-      ytdl(`https://www.youtube.com/watch?v=${videoId}`, { filter: 'audioonly', quality: 'highestaudio' })
-        .pipe(res);
+      const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
+      const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+      
+      if (!format) {
+        return res.status(404).send("Audio format not found");
+      }
+      
+      // Crucial: Set correct mime type so Android <audio> tag doesn't fail to decode
+      res.setHeader('Content-Type', format.mimeType?.split(';')[0] || 'audio/mp4');
+      ytdl.downloadFromInfo(info, { format }).pipe(res);
     } catch (error) {
       console.error("Audio stream error:", error);
       res.status(500).send("Stream error");
