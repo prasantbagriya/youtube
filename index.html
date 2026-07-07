@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>VidStream - Premium Video Experience</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme color (Android Chrome status bar) -->
+    <meta name="theme-color" content="#ff0000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VidStream" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- SEO -->
+    <meta name="description" content="VidStream - Your premium video streaming experience" />
+
+    <script>
+      // Emergency fix for fetch getter/setter issue in some environments
+      (function() {
+        try {
+          const nativeFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return nativeFetch; },
+            set: function() { /* ignore attempts to override */ },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('Could not wrap fetch:', e);
+        }
+      })();
+
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered:', reg.scope))
+            .catch(err => console.log('SW registration failed:', err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

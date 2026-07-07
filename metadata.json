@@ -1,0 +1,8 @@
+{
+  "name": "YouTube Viewer",
+  "description": "A clean, lightweight YouTube video browser and player using the official YouTube Data API v3.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
