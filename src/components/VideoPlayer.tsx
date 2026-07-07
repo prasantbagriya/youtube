@@ -161,6 +161,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
         });
       }
 
+      // Native Plugin (for Android Foreground Service)
       try {
         MediaSession.setMetadata({
           title: video.snippet.title,
@@ -169,61 +170,37 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           artwork: [{ src: thumb, sizes: '512x512', type: 'image/jpeg' }]
         });
         MediaSession.setPlaybackState({ playbackState: 'playing' });
+        
+        MediaSession.setActionHandler({ action: 'play' }, () => {
+          const audioEl = document.querySelector('audio');
+          if (audioEl) {
+             audioEl.play().catch(console.warn);
+          } else {
+             iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+          }
+          MediaSession.setPlaybackState({ playbackState: 'playing' });
+        });
+        MediaSession.setActionHandler({ action: 'pause' }, () => {
+          const audioEl = document.querySelector('audio');
+          if (audioEl) {
+             audioEl.pause();
+          } else {
+             iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+          }
+          MediaSession.setPlaybackState({ playbackState: 'paused' });
+        });
       } catch (e) {
         console.warn('Native MediaSession not available', e);
       }
-      
-      // Native Audio Playback Integration
-      if (isAudioMode) {
-        import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
-          NativeAudio.preload({
-              assetId: 'youtube-audio',
-              assetPath: `https://youtube-j5r4.onrender.com/api/youtube/audio/${videoId}`,
-              audioChannelNum: 1,
-              isUrl: true
-          }).then(() => {
-              NativeAudio.play({ assetId: 'youtube-audio' });
-          }).catch(console.warn);
-          
-          MediaSession.setActionHandler({ action: 'play' }, () => {
-             NativeAudio.play({ assetId: 'youtube-audio' });
-             MediaSession.setPlaybackState({ playbackState: 'playing' });
-          });
-          MediaSession.setActionHandler({ action: 'pause' }, () => {
-             NativeAudio.pause({ assetId: 'youtube-audio' });
-             MediaSession.setPlaybackState({ playbackState: 'paused' });
-          });
-        });
-      } else {
-        import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
-          NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
-          NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
-        });
-        
-        MediaSession.setActionHandler({ action: 'play' }, () => {
-           iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
-           MediaSession.setPlaybackState({ playbackState: 'playing' });
-        });
-        MediaSession.setActionHandler({ action: 'pause' }, () => {
-           iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
-           MediaSession.setPlaybackState({ playbackState: 'paused' });
-        });
-      }
-      
     }
-    
-    return () => {
-       import('@capgo/capacitor-native-audio').then(({ NativeAudio }) => {
-          NativeAudio.stop({ assetId: 'youtube-audio' }).catch(() => {});
-          NativeAudio.unload({ assetId: 'youtube-audio' }).catch(() => {});
-       });
-    };
-  }, [video, videoId, videos, isAudioMode]);
+  }, [video, videoId, videos]);
 
+  // Autoplay Next Video logic
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       try {
         const data = JSON.parse(e.data);
+        // YouTube API state: 0 = ended
         if (data.event === "onStateChange" && data.info === 0) {
           if (relatedVideos && relatedVideos.length > 0) {
             onVideoSelect(relatedVideos[0]);
@@ -233,6 +210,8 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
     };
 
     window.addEventListener("message", handleMessage);
+
+    // Send a listening event to the iframe to ensure it broadcasts state changes
     const hookIframe = setInterval(() => {
       if (iframeRef.current && iframeRef.current.contentWindow) {
         iframeRef.current.contentWindow.postMessage(JSON.stringify({
@@ -252,8 +231,11 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
   if (!video) return null;
 
   const { title, channelTitle, description, publishedAt } = video.snippet;
+  
+  // Calculate relative time
   const daysAgo = Math.floor((Date.now() - new Date(publishedAt).getTime()) / (1000 * 3600 * 24));
   const timeText = daysAgo === 0 ? "Today" : daysAgo < 30 ? `${daysAgo} days ago` : daysAgo < 365 ? `${Math.floor(daysAgo / 30)} months ago` : `${Math.floor(daysAgo / 365)} years ago`;
+  
   // Fake stats
   const views = video.statistics?.viewCount ? parseInt(video.statistics.viewCount) : Math.floor(Math.random() * 900000) + 10000;
   const viewText = views > 1000000 ? `${(views / 1000000).toFixed(1)}M views` : views > 1000 ? `${Math.floor(views / 1000)}K views` : `${views} views`;
@@ -276,6 +258,16 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                   <Headphones size={24} /> Audio Mode Active
                 </div>
                 <p className="text-white/70 text-sm mb-4">Audio is streaming from server...</p>
+                <audio 
+                  autoPlay 
+                  controls 
+                  className="w-full max-w-sm mt-4" 
+                  src={`https://youtube-j5r4.onrender.com/api/youtube/audio/${videoId}`}
+                  onPlay={() => {
+                    // Send pause to iframe so they don't overlap
+                    iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo' }), '*');
+                  }}
+                />
               </div>
             </div>
           )}
