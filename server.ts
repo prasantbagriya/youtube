@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import yts from "yt-search";
+import ytdl from "@distube/ytdl-core";
 import NodeCache from "node-cache";
 
 // Cache for 30 minutes to improve speed and reduce API/scraping load
@@ -27,6 +28,18 @@ async function startServer() {
   const app = express();
 
   // API Routes
+  app.get("/api/youtube/audio/:videoId", async (req, res) => {
+    try {
+      const videoId = req.params.videoId;
+      res.setHeader('Content-Type', 'audio/mpeg');
+      ytdl(`https://www.youtube.com/watch?v=${videoId}`, { filter: 'audioonly', quality: 'highestaudio' })
+        .pipe(res);
+    } catch (error) {
+      console.error("Audio stream error:", error);
+      res.status(500).send("Stream error");
+    }
+  });
+
   app.get("/api/youtube/search", async (req, res) => {
     const { q, maxResults = 20, pageToken, order = "relevance" } = req.query;
     const authHeader = req.headers.authorization;

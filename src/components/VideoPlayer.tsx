@@ -193,35 +193,43 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
   const likeText = likes > 1000 ? `${(likes / 1000).toFixed(1)}K` : `${likes}`;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 md:px-6 md:py-6 max-w-[1800px] mx-auto bg-[#f9f9f9] min-h-full">
+    <div className="flex flex-col lg:flex-row gap-6 sm:p-4 md:px-6 md:py-6 max-w-[1800px] mx-auto bg-[#f9f9f9] min-h-full">
       {/* Primary Column */}
       <div className="flex-1 flex flex-col gap-3 min-w-[65%]">
-        <div className="w-full bg-black rounded-xl overflow-hidden shadow-sm relative group" style={{ aspectRatio: '16/9' }}>
-          {isAudioMode && (
+        <div className="w-full bg-black sm:rounded-xl overflow-hidden shadow-sm relative group" style={{ aspectRatio: '16/9' }}>
+          {isAudioMode ? (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900 bg-cover bg-center" style={{ backgroundImage: `url(${video.snippet.thumbnails.high?.url})` }}>
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-              <div className="z-30 flex flex-col items-center gap-4">
+              <div className="z-30 flex flex-col items-center gap-4 w-full px-8">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl animate-[spin_10s_linear_infinite]">
                    <img src={video.snippet.thumbnails.default?.url} className="w-full h-full object-cover" alt="Audio Thumbnail" />
                 </div>
                 <div className="text-white font-bold text-xl flex items-center gap-2">
                   <Headphones size={24} /> Audio Mode Active
                 </div>
-                <p className="text-white/70 text-sm">Video is playing in the background</p>
+                <p className="text-white/70 text-sm mb-4">Video is playing in the background</p>
+                <audio 
+                  src={`/api/youtube/audio/${videoId}`}
+                  controls
+                  autoPlay
+                  className="w-full max-w-md custom-audio-player"
+                />
               </div>
             </div>
+          ) : (
+            <iframe
+              id="player"
+              ref={iframeRef}
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
+              className="w-full h-full border-none"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
+            />
           )}
-          <iframe
-            id="player"
-            ref={iframeRef}
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
-            className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
-            allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
-          />
         </div>
 
-        <h1 className="text-xl font-bold text-[#0f0f0f] mt-2 leading-tight truncate" dangerouslySetInnerHTML={{ __html: title }} />
+        <div className="px-4 sm:px-0">
+          <h1 className="text-xl font-bold text-[#0f0f0f] mt-2 leading-tight truncate" dangerouslySetInnerHTML={{ __html: title }} />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
           <div className="flex items-center gap-4">
@@ -238,6 +246,14 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            <button 
+              onClick={() => setIsAudioMode(!isAudioMode)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-colors ${isAudioMode ? 'bg-[#0f0f0f] text-white' : 'bg-[#f2f2f2] text-[#0f0f0f] hover:bg-[#e5e5e5]'}`}
+            >
+              <Headphones size={18} strokeWidth={1.5} />
+              <span className="whitespace-nowrap">Audio Mode (Background)</span>
+            </button>
+
             <div className="flex bg-[#f2f2f2] rounded-full overflow-hidden hover:bg-[#e5e5e5] transition-colors cursor-pointer">
               <button className="flex items-center gap-2 px-4 py-2 border-r border-[#cccccc]">
                 <ThumbsUp size={18} strokeWidth={1.5} className="text-[#0f0f0f]" />
@@ -323,6 +339,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                <div className="text-center text-[#606060] py-8">No comments found or comments are disabled.</div>
              )}
            </div>
+        </div>
         </div>
       </div>
 
