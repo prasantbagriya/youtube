@@ -12,6 +12,11 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#ffffff",
+      "style": "DARK"
     }
   }
 }

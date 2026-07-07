@@ -3,6 +3,10 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import yts from "yt-search";
+import NodeCache from "node-cache";
+
+// Cache for 30 minutes to improve speed and reduce API/scraping load
+const cache = new NodeCache({ stdTTL: 1800, checkperiod: 300 });
 
 // Helper to parse YouTube ISO 8601 duration (e.g., PT1M30S) into seconds
 function parseDurationToSeconds(duration: string): number {
@@ -26,6 +30,12 @@ async function startServer() {
   app.get("/api/youtube/search", async (req, res) => {
     const { q, maxResults = 20, pageToken, order = "relevance" } = req.query;
     const authHeader = req.headers.authorization;
+    
+    // Check cache first (ignore cache if using personal auth token)
+    const cacheKey = `search_${q}_${maxResults}_${pageToken || 'first'}_${order}`;
+    if (!authHeader && cache.has(cacheKey)) {
+      return res.json(cache.get(cacheKey));
+    }
     
     // Function to use the free yt-search library as a fallback
     const useFreeFallback = async (searchQuery: string, pageTokenParam?: string) => {
@@ -62,7 +72,9 @@ async function startServer() {
         });
         
         const nextToken = videos.length === limit ? (page + 1).toString() : undefined;
-        return res.json({ items: longEnoughItems, nextPageToken: nextToken });
+        const responseData = { items: longEnoughItems, nextPageToken: nextToken };
+        if (!authHeader) cache.set(cacheKey, responseData);
+        return res.json(responseData);
       } catch (err) {
         console.error("yt-search fallback failed:", err);
         return res.status(500).json({ error: "Search failed completely." });
@@ -88,11 +100,8 @@ async function startServer() {
       const response = await globalThis.fetch(url, { headers });
       const data = await response.json();
       if (!response.ok) {
-        if (response.status === 403 || response.status === 401 || response.status === 429) {
-          // Quota exceeded or invalid key, use fallback
-          return useFreeFallback(q as string, pageToken as string);
-        }
-        return res.status(response.status).json({ error: data.error?.message || "Failed to fetch from YouTube API" });
+        console.warn(`YouTube API failed with status ${response.status}. Using fallback...`);
+        return useFreeFallback(q as string, pageToken as string);
       }
 
       // SECONDARY REQUEST: Fetch contentDetails to get the exact duration of each video
@@ -121,6 +130,7 @@ async function startServer() {
         }
       }
 
+      if (!authHeader) cache.set(cacheKey, data);
       res.json(data);
     } catch (error) {
       console.error("Search error:", error);
@@ -131,6 +141,11 @@ async function startServer() {
   app.get("/api/youtube/trending", async (req, res) => {
     const { maxResults = 20, regionCode = "IN", categoryId, pageToken } = req.query;
     const authHeader = req.headers.authorization;
+    
+    const cacheKey = `trending_${regionCode}_${categoryId || 'all'}_${maxResults}_${pageToken || 'first'}`;
+    if (!authHeader && cache.has(cacheKey)) {
+      return res.json(cache.get(cacheKey));
+    }
     
     const useFreeFallback = async (pageTokenParam?: string) => {
       try {
@@ -167,7 +182,9 @@ async function startServer() {
         });
         
         const nextToken = videos.length === limit ? (page + 1).toString() : undefined;
-        return res.json({ items: longEnoughItems, nextPageToken: nextToken });
+        const responseData = { items: longEnoughItems, nextPageToken: nextToken };
+        if (!authHeader) cache.set(cacheKey, responseData);
+        return res.json(responseData);
       } catch (err) {
         return res.status(500).json({ error: "Trending failed completely." });
       }
@@ -194,10 +211,8 @@ async function startServer() {
       const response = await globalThis.fetch(url, { headers });
       const data = await response.json();
       if (!response.ok) {
-        if (response.status === 403 || response.status === 401 || response.status === 429) {
-          return useFreeFallback(pageToken as string);
-        }
-        return res.status(response.status).json({ error: data.error?.message || "Failed to fetch trending videos" });
+        console.warn(`YouTube API failed with status ${response.status}. Using fallback...`);
+        return useFreeFallback(pageToken as string);
       }
 
       // STRICT FILTER: Since this is the trending API, contentDetails is already included!
@@ -208,6 +223,7 @@ async function startServer() {
         });
       }
 
+      if (!authHeader) cache.set(cacheKey, data);
       res.json(data);
     } catch (error) {
       console.error("Trending error:", error);
@@ -218,10 +234,16 @@ async function startServer() {
   app.get("/api/youtube/suggest", async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json([q, []]);
+    
+    const cacheKey = `suggest_${q}`;
+    if (cache.has(cacheKey)) {
+      return res.json(cache.get(cacheKey));
+    }
     try {
       const url = `http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q as string)}`;
       const response = await globalThis.fetch(url);
       const data = await response.json();
+      cache.set(cacheKey, data, 3600); // cache suggestions longer
       res.json(data); // returns [query, [suggestions...]]
     } catch (error) {
       console.error("Suggest error:", error);
