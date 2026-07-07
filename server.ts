@@ -33,30 +33,31 @@ async function startServer() {
       const videoId = req.params.videoId;
       const youtubedl = (await import('youtube-dl-exec')).default;
       
-      const info = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-        dumpJson: true,
+      res.setHeader('Content-Type', 'audio/mp4');
+      
+      // Spawn yt-dlp to download and pipe directly to response
+      const subprocess = youtubedl.exec(`https://www.youtube.com/watch?v=${videoId}`, {
+        f: 'bestaudio',
+        o: '-',
         noWarnings: true,
         callHome: false,
         noCheckCertificates: true,
-        preferFreeFormats: true,
         youtubeSkipDashManifest: true,
         referer: 'https://www.youtube.com/'
       }) as any;
-
-      // Find best audio-only format
-      const formats = info.formats || [];
-      const audioFormats = formats.filter((f: any) => f.acodec !== 'none' && f.vcodec === 'none');
-      const format = audioFormats.length > 0 ? audioFormats[0] : formats[0];
       
-      if (!format || !format.url) {
-        return res.status(404).send("Audio format not found");
+      if (subprocess.stdout) {
+        subprocess.stdout.pipe(res);
       }
       
-      // Redirect the client's <audio> tag directly to Google's streaming server
-      res.redirect(302, format.url);
+      subprocess.catch((error: any) => {
+        if (!res.headersSent) {
+           res.status(500).send("Stream error");
+        }
+      });
     } catch (error) {
       console.error("Audio stream error:", error);
-      res.status(500).send("Stream error");
+      if (!res.headersSent) res.status(500).send("Stream error");
     }
   });
 
