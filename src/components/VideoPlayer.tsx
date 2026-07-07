@@ -81,21 +81,29 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
 
   // Handle visibility change: resume everything when user comes back to app
   useEffect(() => {
+    let playInterval: NodeJS.Timeout;
+
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         // Page became visible again → resume audio context and re-request wakeLock
         resumeAudioContext();
         requestWakeLock();
+        if (playInterval) clearInterval(playInterval);
         // Small delay then send play command to iframe
         setTimeout(sendPlayToIframe, 300);
       } else {
         // Page going hidden → make sure AudioContext is running before it gets suspended
         resumeAudioContext();
+        // Force YouTube iframe to stay playing by spamming play command
+        playInterval = setInterval(sendPlayToIframe, 1000);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (playInterval) clearInterval(playInterval);
+    };
   }, []);
 
   // Unlock AudioContext and WakeLock on first user interaction
@@ -230,7 +238,7 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
       {/* Primary Column */}
       <div className="flex-1 flex flex-col gap-3 min-w-[65%]">
         <div className="w-full bg-black sm:rounded-xl overflow-hidden shadow-sm relative group" style={{ aspectRatio: '16/9' }}>
-          {isAudioMode ? (
+          {isAudioMode && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900 bg-cover bg-center" style={{ backgroundImage: `url(${video.snippet.thumbnails.high?.url})` }}>
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
               <div className="z-30 flex flex-col items-center gap-4 w-full px-8">
@@ -241,29 +249,17 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
                   <Headphones size={24} /> Audio Mode Active
                 </div>
                 <p className="text-white/70 text-sm mb-4">Video is playing in the background</p>
-                <audio 
-                  src={`/api/youtube/audio/${videoId}`}
-                  controls
-                  autoPlay
-                  onEnded={() => {
-                    if (relatedVideos && relatedVideos.length > 0) {
-                      onVideoSelect(relatedVideos[0]);
-                    }
-                  }}
-                  className="w-full max-w-md custom-audio-player"
-                />
               </div>
             </div>
-          ) : (
-            <iframe
-              id="player"
-              ref={iframeRef}
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
-              className="w-full h-full border-none"
-              allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
-            />
           )}
+          <iframe
+            id="player"
+            ref={iframeRef}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1&fs=1`}
+            className={`w-full h-full border-none ${isAudioMode ? 'invisible absolute' : 'visible'}`}
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync"
+          />
         </div>
 
         <div className="px-4 sm:px-0">
@@ -284,14 +280,6 @@ export function VideoPlayer({ video, videos, onVideoSelect, onAddToWatchLater, w
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-            <button 
-              onClick={() => setIsAudioMode(!isAudioMode)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-colors ${isAudioMode ? 'bg-[#0f0f0f] text-white' : 'bg-[#f2f2f2] text-[#0f0f0f] hover:bg-[#e5e5e5]'}`}
-            >
-              <Headphones size={18} strokeWidth={1.5} />
-              <span className="whitespace-nowrap">Audio Mode (Background)</span>
-            </button>
-
             <div className="flex bg-[#f2f2f2] rounded-full overflow-hidden hover:bg-[#e5e5e5] transition-colors cursor-pointer">
               <button className="flex items-center gap-2 px-4 py-2 border-r border-[#cccccc]">
                 <ThumbsUp size={18} strokeWidth={1.5} className="text-[#0f0f0f]" />
